@@ -1,0 +1,21 @@
+IFS=$'\n' read -d '' -r -a lines < $HOME/bin/shortcuts
+cdataexports=$(printf '%s;' "${lines[@]}")
+
+echo "Applying shortcuts: " ${lines[@]}
+
+export CDDATA=$cdataexports
+
+cd () {
+    local dest=$1
+    if [[ $dest == :* ]]
+    then
+        [[ $CDDATA =~ (^|;)${dest:1}:([^;]*)(;|$) ]]
+        dest=${BASH_REMATCH[2]}
+    fi
+    if [[ -z $dest ]]
+    then
+        echo "cd_wrapper >> " $dest
+    else
+        builtin cd "$dest"
+    fi
+}

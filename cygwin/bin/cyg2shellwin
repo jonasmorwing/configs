@@ -1,0 +1,9 @@
+#!/usr/bin/perl 
+
+foreach (@ARGV)
+{
+	s{/cygdrive/([a-zA-Z])/}{$1:/}g;
+	s{//}{/}g;
+	s{/}{\\\\}g;
+	print "$_ ";
+}

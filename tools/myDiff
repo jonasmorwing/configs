@@ -1,0 +1,180 @@
+#!/bin/perl
+use strict;
+my $path;
+my %new;
+my %old;
+#use Data::Dumper;
+#print Dumper(\@ARGV);
+#my $args = join " ", @ARGV;
+#my $cmd1 = "echo \"myDiff args: $args\" > /cygdrive/c/Temp/log.txt";
+#runCmd($cmd1);
+my $KDiff = '/cygdrive/c/Program\ Files\ \(x86\)/KDiff3/kdiff3.exe';
+my $diffAnyProfiles = "/cygdrive/c/cygwin/bin/perl diffAnyProfiles.pl"; #Specified perl version in case embedded git otherwise takes from "Atlassian/git mingw perl"
+my $profilingDiffTextViewer = '/cygdrive/c/Program\ Files\ \(x86\)/TextPad\ 5/TextPad.exe';
+
+my $bAlwaysAsynchDiffs =1;  # Can be toggled here. git default behaviour is now asynchronous diffs. Even when set to 1, seems only to affect difftool not diff ...HMM 
+
+if (@ARGV[0] eq '-tool') {
+	shift @ARGV;
+	($old{file},$new{file}) = @ARGV;
+	$path = $new{file};
+} else {
+	($path,$old{file},$old{hex},$old{mode},$new{file},$new{hex},$new{mode}) = @ARGV;
+}
+
+my $type = 'Normal';
+if ($path =~ m{/profiling/result} ||
+	$new{file} =~ m/(ADS_profiling_.*\.txt)|(CALLGRIND_.*\.txt)/ )
+{
+	$type = 'ProfilingResult';
+}
+
+my $bAnyAsynchronousDiff = 0; 
+
+$bAnyAsynchronousDiff = 1 if $bAlwaysAsynchDiffs;
+
+if ($type eq 'ProfilingResult' ) {
+	$bAnyAsynchronousDiff = 1; # Two diffs are called the first is asynchronous
+}
+
+if ($bAnyAsynchronousDiff)
+{
+	# Create backup of the files, required since git removes the temorary files, if we are spinning off an asynchonous call (with "&")
+	($old{file},$new{file}) = backUpFiles($old{file},$new{file});
+}
+
+foreach my $file  ( (\%new,\%old) )
+{
+	if (!defined $file->{hex} || $file->{hex}  =~ m/0000000000000000000000/) {
+		$file->{alias} = myCygPath($file->{file},'-w');
+	} else {
+		$file->{alias} = "$path (blob $file->{hex})";
+	}
+	$file->{file} = myCygPath($file->{file});
+}
+
+my $cmd;
+my $bCallKDiff;
+
+if ($type eq 'ProfilingResult' )
+{
+	# Use profiling diff
+	callProfilingDiff($old{file},$new{file},$old{alias},$new{alias});
+	$bCallKDiff = 1;   # And also call KDiff
+} else {
+	# Use KDiff
+	$bCallKDiff = 1;
+}
+if ($bCallKDiff)
+{
+	$cmd = "$KDiff \"$old{file}\" -L \"$old{alias}\" \"$new{file}\" -L \"$new{alias}\" ";
+	$cmd .= " &" if ($bAlwaysAsynchDiffs);
+	runCmd($cmd);		
+}
+
+
+##############################################################################################
+
+sub backUpFiles
+{
+	use File::Temp qw/ :mktemp  /;
+	use File::Spec;
+	use File::Copy;
+	my @files = @_;
+	my @filesBk;
+
+	foreach my $file (@files)
+	{
+		my ($volume,$directories,$fname) =File::Spec->splitpath( $file );
+		#print STDERR "$file: $volume,$directories,$fname\n";
+		my $fileBk = mktemp "$ENV{TEMP}/$fname.XXXXXX";
+		copy($file,$fileBk) or die "Copy failed: $!";
+		push @filesBk,$fileBk; 
+	}
+	return @filesBk;
+}
+
+sub callProfilingDiff
+{
+	use FindBin;
+	use File::Temp qw/ :mktemp  /;
+	use Data::Dumper;
+	use autodie;
+
+	my @FNAMES;
+	my @PNAMES;
+
+	($PNAMES[0],$PNAMES[1],$FNAMES[0],$FNAMES[1]) = @_;
+
+
+	my $cmd = "$diffAnyProfiles -removeSuffixes ";
+	if (@FNAMES) {
+		$cmd .= "-fnameOld='$FNAMES[0]' " if $FNAMES[0];
+		$cmd .= "-fnameNew='$FNAMES[1]' " if $FNAMES[1];
+	}
+	my @pnamesUnix = map { myCygPath($_,'-u') } @PNAMES;  # To cygwin names
+
+#	my @pnamesUnix = map { "\"$_\""} @PNAMES;  # Seems like cygwin understands the paths if they are just quoted
+	my $cmd1 = $cmd;
+	$cmd1 .= join(' ',@pnamesUnix);
+	my $tmpFile1 = mktemp "$ENV{TEMP}/temp.XXXXXX";
+	$cmd1 .= " > $tmpFile1 ";
+
+
+	runCmd($cmd1);
+
+	my $bAlsoShowDiffWithTimeDiffsIgnored=0; # Skipping this for now, since it is mostly just disturbing
+
+	my $tmpFile2;
+	my $cmd2='';	
+	if ($bAlsoShowDiffWithTimeDiffsIgnored) 
+	{
+		my $cmd2 = "$cmd -ignoreTotalTime " ;
+		$cmd2 .= join(' ',@pnamesUnix);
+		$tmpFile2 = mktemp "temp.XXXXXX";
+		$cmd2 .= " > $tmpFile2 ";
+
+		runCmd($cmd2);
+	}
+	#if (system $cmd != 0) { die "Error: $cmd failed: $?\n" };
+
+	#print Dumper(\%ENV);
+
+	my $tmpFile1W = myCygPath($tmpFile1);
+	$cmd = "$profilingDiffTextViewer \"$tmpFile1W\"";
+ 	if ($bAlsoShowDiffWithTimeDiffsIgnored) {
+		my $tmpFile2W = myCygPath($tmpFile2);
+		$cmd .= "; $profilingDiffTextViewer \"$tmpFile2W\"";
+	}
+	$cmd = "$cmd &";
+	runCmd($cmd);
+
+# Can't unlink when processes are asynchornous
+#	unlink $tmpFile1;  
+#	if ($bAlsoShowDiffWithTimeDiffsIgnored) {
+#		unlink $tmpFile2;
+#	}
+}
+
+sub myCygPath
+{
+	my ($file,$opt) = @_;
+	$opt = '-wla' if !defined $opt;
+	$file = `cygpath $opt "$file"`;
+	$file =~ s/[\n\r]//g;  # Cygpath adds a newline
+
+	return $file;
+}
+
+
+sub runCmd {
+	my $cmd = shift @_;
+	print "$cmd\n";
+	my $status =  system $cmd;
+	if ($status != 0) {
+		print STDERR "Error $cmd exited with status=$status.";
+		print STDERR "Error message=$!" if $!;
+		print "\n";
+	}
+	return $status;
+}
