@@ -54,20 +54,43 @@
 	#findalias = "!grepalias() { git config --global --get-regexp alias | grep -i \"$1\" | awk -v nr=2 '{sub(/^alias\\./,\"\")};{printf \"\\033[31m%_10s\\033[1;37m\", $1};{sep=FS};{for (x=nr; x<=NF; x++) {printf \"%s%s\", sep, $x; }; print \"\\033[0;39m\"}'; }; grepalias"	
 	log-lr = log --left-right --graph --cherry-pick --oneline
 	log-branch = log --first-parent -m
+	logc = log --oneline --decorate --color --graph
 	st = status
-	di = "!f() { cd ${GIT_PREFIX:-.}; if [ `git diff --name-only $@ | wc -l` -gt 1 ]; then git diff --name-status $@; else git diff $@; fi }; f"
+	#di = "!f() { cd ${GIT_PREFIX:-.}; if [ `git diff --name-only $@ | wc -l` -gt 1 ]; then git diff --name-status $@; else git diff $@; fi }; f"
+	di = "!gd() { \
+			_GITDIR=`git rev-parse --show-toplevel` ;  \
+			_GITDIR=`cygpath -u $_GITDIR`; \
+			GITDIR=`realpath $_GITDIR --relative-to=.` ; \
+			git diff --name-status --color $@ | perl -pe 's{(\\s+)}{\\1'$GITDIR'/}'; \
+		}; \
+		f() { \
+			cd ${GIT_PREFIX:-.} >/dev/null ; \
+			if [ `git diff --name-only $@ | wc -l` -gt 1 ]; then \
+				gd $@; \
+			else \
+				git diff $@; \
+			fi \
+		}; \
+		f"
 	getroot = rev-parse --show-toplevel
 #	file-size requires argument to be "<rev>:<git-absoulte-path>"
 	file-size = "!f() { git show $@ | wc -c; }; f"
-#	"!f() { git difftool -y --extcmd 'generic/Perl/Test/gitResultDiffsPlugin.pl -I asllib/test' -O asllib/test/.diffAnalysisOrder $@; }; f"
 
 # Aliases to retrieve corresponding ct versions
 #	ctver = "!f() { git log --first-parent --max-count=2 --pretty=format:%H $1 | xargs -L 1 git log --first-parent $2 --max-count=1 --pretty=format:%h --grep; }; f"
 #	ctver-oneline = "!f() { git log --first-parent --max-count=2 --pretty=format:%H $1 | xargs -L 1 git log --first-parent $2 --max-count=1 --pretty=oneline --grep; }; f"
 	resultver = "!f() { git log --first-parent --pretty=oneline $2 --grep `git log -1 --format=%H $1`; }; f"
+
+	#  Aliases from https://stackoverflow.com/questions/14467953/shorthand-to-view-diff-of-previous-version-of-file
+    prior-hash = "!ph() { git log --pretty=format:'%h' -1 --skip=$1 $2; }; ph"
+    diff-prev = "!dp() { git diff $(git prior-hash $1 $2)..$(git prior-hash $(($1 - 1)) $2) $2; }; dp"
 [push]
 	default = simple
 [color]
-	ui = true
+	ui = always
+	branch = always
+	diff = always
+	interactive = always
+	status = always
 [grep]
 	lineNumber = true
