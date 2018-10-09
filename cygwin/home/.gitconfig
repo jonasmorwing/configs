@@ -6,21 +6,25 @@
 	autocrlf = false
 	preloadindex = true
 	fscache = true
-	excludesfile = $DOCUMENTS\\gitignore_global.txt
+	excludesfile = C:\\Users\\Jonas_Morwing\\Documents\\gitignore_global.txt
 [gc]
 	auto = 256
 [user]
 	name = Jonas Morwing
-	email = $EMAIL
+	email = jonas.morwing@nuance.com
 [diff]
 	tool = myDiffAsTool
- 	#Specified perl version in case embedded git otherwise takes from "Atlassian/git mingw perl"
-	external = "C:/cygwin64/bin/perl C:/Cygwin64/bin/myDiff"
+ 	#For use from cygwin git: Specified perl version in case embedded git otherwise takes from "Atlassian/git mingw perl"
+	# external = "C:/cygwin64/bin/perl C:/Cygwin64/bin/myDiff"
+ 	#For use from git-bash (Git For Windows) (still use cygwin perl which has all packages required)
+	external = "PATH=\"/c/Cygwin64/bin:/c/Cygwin64/home/Jonas_Morwing/bin:/c/Windows/system32\" cmd //C \"C:/cygwin64/bin/perl C:/Cygwin64/bin/myDiff $@\""
 [merge]
 	tool = beyond
 [difftool "myDiffAsTool"]
- 	#Specified perl version in case embedded git otherwise takes from "Atlassian/git mingw perl"
-	cmd = "C:/cygwin64/bin/perl C:/Cygwin64/bin/myDiff" -tool $LOCAL $REMOTE $BASE
+ 	#For use from cygwin git: Specified perl version in case embedded git otherwise takes from "Atlassian/git mingw perl"
+	#cmd = "C:/cygwin64/bin/perl C:/Cygwin64/bin/myDiff" -tool $LOCAL $REMOTE $BASE
+ 	#For use from git-bash (Git For Windows) (still use cygwin perl which has all packages required)
+	cmd = "PATH=\"/c/Cygwin64/bin:/c/Cygwin64/home/Jonas_Morwing/bin:/c/Windows/system32\" cmd //C \"C:/cygwin64/bin/perl C:/Cygwin64/bin/myDiff -tool $LOCAL $REMOTE $BASE\""
 [difftool "kdiff3"]
 	cmd = kdiff3 \"$(cygpath -wla $LOCAL)\" \"$(cygpath -wla $REMOTE)\"
 [difftool "ccDiff"]

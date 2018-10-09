@@ -66,6 +66,8 @@ source /usr/share/bash-completion/bash_completion
 source ~/.git-completion.bash
 source ~/.make-completion
 
+
+
 # History Options
 #
 # Don't put duplicate lines in the history.
@@ -154,7 +156,10 @@ alias egrep='egrep --color=auto'              # show differences in colour
 alias fgrep='fgrep --color=auto'              # show differences in colour
 alias cdgit='cd `git rev-parse --show-toplevel`'  # goto git root folder
 alias msgit='_msgit(){ (PATH="/cygdrive/c/Program Files (x86)/Microsoft Visual Studio/2017/Professional/Common7/IDE/CommonExtensions/Microsoft/TeamFoundation/Team Explorer/Git/mingw32/bin":"/cygdrive/c/Program Files (x86)/Microsoft Visual Studio/2017/Professional/Common7/IDE/CommonExtensions/Microsoft/TeamFoundation/Team Explorer/Git/mingw32/lib/engines":"/cygdrive/c/Program Files (x86)/Microsoft Visual Studio/2017/Professional/Common7/IDE/CommonExtensions/Microsoft/TeamFoundation/Team Explorer/Git/mingw32/lib/pkcs11":"/cygdrive/c/Program Files (x86)/Microsoft Visual Studio/2017/Professional/Common7/IDE/CommonExtensions/Microsoft/TeamFoundation/Team Explorer/Git/mingw32/libexec/git-core":$PATH ; /cygdrive/c/Program\ Files\ \(x86\)/Microsoft\ Visual\ Studio/2017/Professional/Common7/IDE/CommonExtensions/Microsoft/TeamFoundation/Team\ Explorer/Git/mingw32/bin/git.exe $@ ); }; _msgit'
-alias wgit='_wgit(){ PATH="/cygdrive/c/Program Files/Git/bin":"/cygdrive/c/Program Files/Git/bin":"/usr/local/bin":"/usr/bin" "/cygdrive/c/Program Files/Git/bin/git.exe" $@; }; time _wgit'
+alias wgit='_wgit(){ PATH="/cygdrive/c/Program Files/Git/bin":"/usr/local/bin":"/usr/bin" "/cygdrive/c/Program Files/Git/bin/git.exe" $@; }; _wgit'
+alias twgit='_twgit(){ PATH="/cygdrive/c/Program Files/Git/bin":"/usr/local/bin":"/usr/bin" GIT_TRACE_PERFORMANCE=true GIT_TRACE=true "/cygdrive/c/Program Files/Git/bin/git.exe" $@; }; _twgit'
+#alias git=wgit
+
 #
 # Some shortcuts for different directory listings
 # alias ls='ls -hF --color=tty'                 # classify files in colour
@@ -256,6 +261,7 @@ cd_func ()
 alias cd=cd_func
 # Add $HOME/bin to PATH
 export PATH=$PATH:~/bin
+#export PATH=$PATH:/cygdrive/c/Program\ Files/Git/bin
 
 ## Use Windows native python instead of cygwin python
 
