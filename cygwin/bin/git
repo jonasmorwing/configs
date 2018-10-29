@@ -40,6 +40,7 @@ git ()
 
 	local GIT_RETVAL
 	local INTERACTIVE_CMDS='|mergetool|difftool|'  # Surround with |
+	export -f -n git  # For the next subshells, don't export this git-function, since we want msys-git to use the actual msys-git executable for sub-calls to git
 	if [[ "$INTERACTIVE_CMDS" == *"|$1|"* ]];
 	then 
 		HOME=$NETRC_HOME PATH=$MSYSGIT_AND_TOOLS_PATH "/cygdrive/c/Program Files/Git/bin/git.exe" "${myArgs[@]}"
@@ -48,7 +49,9 @@ git ()
 		HOME=$NETRC_HOME PATH=$MSYSGIT_AND_TOOLS_PATH "/cygdrive/c/Program Files/Git/bin/git.exe" "${myArgs[@]}" | less -XRF
 		GIT_RETVAL=${PIPESTATUS[0]}
 	fi
+	export -f git  # Export git to subshells again
 
 	set +f
 	return $GIT_RETVAL
 }
+export -f git  # Export git to subshells
